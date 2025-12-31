@@ -1,11 +1,10 @@
 // lib/api.ts
 
 /**
- * ✅ API Base URL
- * Now using '/api' to leverage the Next.js rewrite configured in next.config.ts.
- * This resolves "Failed to fetch" by proxying requests through the Next.js server.
+ * ✅ Production Backend URL (Render / Railway / etc.)
+ * DO NOT use Next.js rewrites in production
  */
-export const API_BASE_URL = "/api";
+export const API_BASE_URL = "https://pathplanai-backend.onrender.com";
 
 // ----------------------------
 // 1. Resume Upload & Extraction (Orchestrator)
@@ -16,107 +15,99 @@ export async function uploadResume(file: File, targetRole: string) {
   formData.append("target_role", targetRole || "General Professional");
   formData.append("timeframe_months", "3");
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/upload-resume`, {
-      method: "POST",
-      // mode: "cors" is no longer strictly needed with a same-origin proxy, 
-      // but 'fetch' defaults to it.
-      body: formData,
-    });
+  const response = await fetch(`${API_BASE_URL}/upload-resume`, {
+    method: "POST",
+    body: formData,
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Server error: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    // Custom error handling for proxy failures
-    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-      throw new Error("Network error: The Next.js proxy could not reach the FastAPI backend. Check if uvicorn is running at http://127.0.0.1:8000");
-    }
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Resume upload failed");
   }
+
+  return response.json();
 }
 
 // ----------------------------
 // 2. Planner API (Specific Role Roadmap)
 // ----------------------------
-export async function generateSpecificRoadmap(capabilities: any, goal: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/planner/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        capabilities: capabilities,
-        goal: goal,
-        timeframe_months: 3,
-      }),
-    });
+export async function generateSpecificRoadmap(
+  capabilities: any,
+  goal: string
+) {
+  const response = await fetch(`${API_BASE_URL}/planner/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      capabilities,
+      goal,
+      timeframe_months: 3,
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate specific roadmap: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    throw new Error("Failed to connect to the Roadmap Planner service.");
+  if (!response.ok) {
+    throw new Error("Roadmap generation failed");
   }
+
+  return response.json();
 }
 
 // ----------------------------
 // 3. Opportunity Agent API
 // ----------------------------
-export async function analyzeOpportunities(capabilities: any, targetRole: string = "") {
-  try {
-    const response = await fetch(`${API_BASE_URL}/opportunities`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        capabilities: capabilities,
-        market_analysis: {}, 
-        target_role: targetRole,
-      }),
-    });
+export async function analyzeOpportunities(
+  capabilities: any,
+  targetRole: string = ""
+) {
+  const response = await fetch(`${API_BASE_URL}/opportunities`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      capabilities,
+      market_analysis: {},
+      target_role: targetRole,
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Opportunity API failed: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    throw new Error("Failed to connect to the Opportunities service.");
+  if (!response.ok) {
+    throw new Error("Opportunities analysis failed");
   }
+
+  return response.json();
 }
 
 // ----------------------------
 // 4. Professional Presence
 // ----------------------------
-export async function analyzeProfessionalPresence(githubUrl: string, linkedinUrl: string, targetRole: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/professional-insight`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+export async function analyzeProfessionalPresence(
+  githubUrl: string,
+  linkedinUrl: string,
+  targetRole: string
+) {
+  const response = await fetch(`${API_BASE_URL}/professional-insight`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      github_url: githubUrl,
+      linkedin_url: linkedinUrl,
+      target_role: targetRole,
+      linkedin_text: {
+        headline: "",
+        about: "",
+        experience: [],
       },
-      body: JSON.stringify({
-        github_url: githubUrl,
-        linkedin_url: linkedinUrl,
-        target_role: targetRole,
-        linkedin_text: { headline: "", about: "", experience: [] }
-      }),
-    });
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Professional presence review failed: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    throw new Error("Failed to connect to the Professional Presence service.");
+  if (!response.ok) {
+    throw new Error("Professional presence analysis failed");
   }
+
+  return response.json();
 }
