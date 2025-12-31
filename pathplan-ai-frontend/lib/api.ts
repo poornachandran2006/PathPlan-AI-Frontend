@@ -1,13 +1,13 @@
 // lib/api.ts
 
 /**
- * ✅ Production Backend URL (Render / Railway / etc.)
- * DO NOT use Next.js rewrites in production
+ * ✅ FINAL production backend URL (Render)
  */
-export const API_BASE_URL = "https://pathplanai-backend.onrender.com";
+export const API_BASE_URL =
+  "https://pathplan-ai-backend-1.onrender.com";
 
 // ----------------------------
-// 1. Resume Upload & Extraction (Orchestrator)
+// 1. Resume Upload & Extraction
 // ----------------------------
 export async function uploadResume(file: File, targetRole: string) {
   const formData = new FormData();
@@ -21,15 +21,14 @@ export async function uploadResume(file: File, targetRole: string) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || "Resume upload failed");
+    throw new Error("Resume upload failed");
   }
 
   return response.json();
 }
 
 // ----------------------------
-// 2. Planner API (Specific Role Roadmap)
+// 2. Roadmap Planner
 // ----------------------------
 export async function generateSpecificRoadmap(
   capabilities: any,
@@ -55,7 +54,7 @@ export async function generateSpecificRoadmap(
 }
 
 // ----------------------------
-// 3. Opportunity Agent API
+// 3. Opportunity Agent
 // ----------------------------
 export async function analyzeOpportunities(
   capabilities: any,
